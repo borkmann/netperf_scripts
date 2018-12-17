@@ -1,0 +1,27 @@
+#!/bin/sh
+REMOTE_HOSTIP="127.0.0.1"
+if [ "$#" -eq 1 ]; then
+	REMOTE_HOSTIP=$1
+elif [ "$#" -ne 0 ]; then
+	echo "Usage: $0 [REMOTE_HOSTIP]"
+	exit 1
+fi
+MAX_CPU_NUM=`cat /proc/cpuinfo | grep processor | head --lines=-1 | wc -l`
+for CPU in $(seq 0 $MAX_CPU_NUM); do
+	nice -20 netperf -H $REMOTE_HOSTIP -t TCP_RR -T$CPU,$CPU -j -P0 -s2 -I99,1 -- -k "RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY,DIRECTION,LOCAL_CPU_BIND,REMOTE_CPU_BIND,LOCAL_TRANSPORT_RETRANS,REMOTE_TRANSPORT_RETRANS,REQUEST_SIZE,RESPONSE_SIZE,TRANSACTION_RATE" > netperf.cpu$CPU 2>&1 &
+done
+wait
+echo ""
+for AVG in RT_LATENCY MEAN_LATENCY STDDEV_LATENCY MIN_LATENCY P50_LATENCY P90_LATENCY P99_LATENCY MAX_LATENCY; do
+	printf "%30s: %15.3f" "$AVG" "`awk -v which="$AVG" -v num="$MAX_CPU_NUM" -F '=' '$0 ~ which {sum += $2} END {print sum/(num+1)}' netperf.cpu*`"
+	printf "\t\t(per CPU: %s)\n" "`awk -v which="$AVG" -F'=' '$0 ~ which { printf "%15.3f ",$2 }' netperf.cpu*`"
+done
+echo ""
+for SUM in TRANSACTION_RATE; do
+	printf "%30s: %15.3f" "$SUM" "`awk -v which="$SUM" -F '=' '$0 ~ which {sum += $2} END {print sum}' netperf.cpu*`"
+	printf "\t\t(per CPU: %s)\n" "`awk -v which="$SUM" -F'=' '$0 ~ which { printf "%15.3f ",$2 }' netperf.cpu*`"
+done
+echo ""
+for CPU in $(seq 0 $MAX_CPU_NUM); do
+	rm -f netperf.cpu$CPU
+done
