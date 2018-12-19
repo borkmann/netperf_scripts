@@ -6,7 +6,7 @@ elif [ "$#" -ne 0 ]; then
 	echo "Usage: $0 [REMOTE_HOSTIP]"
 	exit 1
 fi
-MAX_CPU_NUM=`cat /proc/cpuinfo | grep processor | head --lines=-1 | wc -l`
+MAX_CPU_NUM=$((`cat /proc/cpuinfo | grep processor | wc -l`-1))
 for CPU in $(seq 0 $MAX_CPU_NUM); do
 	nice -20 netperf -H $REMOTE_HOSTIP -t TCP_RR -T$CPU,$CPU -j -P0 -s2 -I99,1 -- -k "RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY,DIRECTION,LOCAL_CPU_BIND,REMOTE_CPU_BIND,LOCAL_TRANSPORT_RETRANS,REMOTE_TRANSPORT_RETRANS,REQUEST_SIZE,RESPONSE_SIZE,TRANSACTION_RATE" > netperf.cpu$CPU 2>&1 &
 done
