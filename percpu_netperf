@@ -12,7 +12,7 @@ for CPU in $(seq 0 $MAX_CPU_NUM); do
 done
 wait
 echo ""
-for AVG in RT_LATENCY MEAN_LATENCY STDDEV_LATENCY MIN_LATENCY P50_LATENCY P90_LATENCY P99_LATENCY MAX_LATENCY; do
+for AVG in RT_LATENCY MEAN_LATENCY STDDEV_LATENCY MIN_LATENCY P50_LATENCY P90_LATENCY P99_LATENCY; do
 	printf "%30s: %15.3f" "$AVG" "`awk -v which="$AVG" -v num="$MAX_CPU_NUM" -F '=' '$0 ~ which {sum += $2} END {print sum/(num+1)}' netperf.cpu*`"
 	printf "\t\t(per CPU: %s)\n" "`awk -v which="$AVG" -F'=' '$0 ~ which { printf "%15.3f ",$2 }' netperf.cpu*`"
 done
